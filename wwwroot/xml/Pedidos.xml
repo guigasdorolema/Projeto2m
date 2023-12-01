@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Pedidos>
+  <PedidoId>1</PedidoId>
+  <ValorTotal>1900</ValorTotal>
+  <Moveis>
+    <MovelId>2</MovelId>
+    <Quantidade>1</Quantidade>
+  </Moveis>
+  <PedidoId>2</PedidoId>
+  <ValorTotal>150</ValorTotal>
+  <Moveis>
+    <MovelId>5</MovelId>
+    <Quantidade>1</Quantidade>
+  </Moveis>
+</Pedidos>

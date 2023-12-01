@@ -8,18 +8,24 @@ using Microsoft.EntityFrameworkCore;
 using InduMovel.Context;
 using InduMovel.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace InduMovel.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles="Admin")]
+    [Authorize(Roles = "Admin")]
     public class AdminMovelController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly ConfiguraImagem _confImg;
+        private readonly IWebHostEnvironment _hostingEnvireoment;
 
-        public AdminMovelController(AppDbContext context)
+        public AdminMovelController(AppDbContext context,
+        IWebHostEnvironment hostEnvironment, IOptions<ConfiguraImagem> confImg)
         {
             _context = context;
+            _confImg = confImg.Value;
+            _hostingEnvireoment = hostEnvironment;
         }
 
         // GET: Admin/AdminMovel
@@ -60,15 +66,26 @@ namespace InduMovel.Areas.Admin.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MovelId,Nome,Descricao,Cor,ImagemUrl,ImagemPequenaUrl,Valor,EmProducao,Ativo,CategoriaId")] Movel movel)
+        public async Task<IActionResult> Create([Bind("MovelId,Nome,Descricao,Cor,ImagemUrl,ImagemPequenaUrl,Valor,EmProducao,Ativo,CategoriaId")] Movel movel, IFormFile Imagem, IFormFile Imagemcurta)
         {
+            if (Imagem != null)
+            {
+                string imagemr = await SalvarArquivo(Imagem);
+                movel.ImagemUrl = imagemr;
+            }
+            if (Imagemcurta != null)
+            {
+                string imagemcr = await SalvarArquivo(Imagemcurta);
+                movel.ImagemPequenaUrl = imagemcr;
+            }
             if (ModelState.IsValid)
             {
                 _context.Add(movel);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "CategoriaId", "CategoriaId", movel.CategoriaId);
+            ViewData["CategoriaId"] = new SelectList(_context.Categorias, "CategoriaId", "Nome", movel.CategoriaId);
+            ViewData["Erro"] =ModelState.IsValid;
             return View(movel);
         }
 
@@ -94,11 +111,25 @@ namespace InduMovel.Areas.Admin.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("MovelId,Nome,Descricao,Cor,ImagemUrl,ImagemPequenaUrl,Valor,EmProducao,Ativo,CategoriaId")] Movel movel)
+        public async Task<IActionResult> Edit(int id, [Bind("MovelId,Nome,Descricao,Cor,ImagemUrl,ImagemPequenaUrl,Valor,EmProducao,Ativo,CategoriaId")] Movel movel, IFormFile Imagem, IFormFile
+Imagemcurta)
         {
             if (id != movel.MovelId)
             {
                 return NotFound();
+            }
+
+            if (Imagem != null)
+            {
+                Deletefile(movel.ImagemUrl);
+                string imagemr = await SalvarArquivo(Imagem);
+                movel.ImagemUrl = imagemr;
+            }
+            if (Imagemcurta != null)
+            {
+                Deletefile(movel.ImagemPequenaUrl);
+                string imagemcr = await SalvarArquivo(Imagemcurta);
+                movel.ImagemPequenaUrl = imagemcr;
             }
 
             if (ModelState.IsValid)
@@ -156,16 +187,66 @@ namespace InduMovel.Areas.Admin.Controllers
             var movel = await _context.Moveis.FindAsync(id);
             if (movel != null)
             {
-                _context.Moveis.Remove(movel);
+                Deletefile(movel.ImagemPequenaUrl);
+                Deletefile(movel.ImagemUrl);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool MovelExists(int id)
         {
-          return (_context.Moveis?.Any(e => e.MovelId == id)).GetValueOrDefault();
+            return (_context.Moveis?.Any(e => e.MovelId == id)).GetValueOrDefault();
+        }
+        public async Task<string> SalvarArquivo(IFormFile Imagem)
+        {
+            var filePath = Path.Combine(_hostingEnvireoment.WebRootPath,
+
+            _confImg.NomePastaImagemItem);
+
+            if (Imagem.FileName.Contains(".jpg") || Imagem.FileName.Contains(".gif")
+
+            || Imagem.FileName.Contains(".svg") || Imagem.FileName.Contains(".png"))
+
+            {
+                string novoNome =
+
+                $"{Guid.NewGuid()}.{Path.GetExtension(Imagem.FileName)}";
+
+                var fileNameWithPath = string.Concat(filePath, "\\", novoNome);
+                using (var stream = new FileStream(fileNameWithPath,
+
+                FileMode.Create))
+                {
+                    await Imagem.CopyToAsync(stream);
+                }
+                return "~/" + _confImg.NomePastaImagemItem + "/" + novoNome;
+            }
+            return null;
+        }
+        public void Deletefile(string fname)
+        {
+            if (fname != null)
+            {
+
+                int pi = fname.LastIndexOf("/") + 1;
+                int pf = fname.Length - pi;
+                string nomearquivo = fname.Substring(pi, pf);
+                try
+                {
+                    string _imagemDeleta = Path.Combine(_hostingEnvireoment.WebRootPath,
+                    _confImg.NomePastaImagemItem + "\\", nomearquivo);
+                    if ((System.IO.File.Exists(_imagemDeleta)))
+                    {
+                        System.IO.File.Delete(_imagemDeleta);
+                    }
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
         }
     }
 }

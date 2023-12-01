@@ -1,7 +1,9 @@
+using InduMovel.Context;
 using InduMovel.Models;
 using InduMovel.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace InduMovel.Controllers
 {
@@ -10,6 +12,7 @@ namespace InduMovel.Controllers
     {
         private readonly IPedidoRepository _pedidoR;
         private readonly Carrinho _carrinho;
+         private readonly AppDbContext _context;
         public PedidoController(IPedidoRepository pedidoR, Carrinho carrinho)
         {
             _pedidoR = pedidoR;
@@ -55,6 +58,28 @@ namespace InduMovel.Controllers
                 return View("~/Views/Pedido/CheckoutCompleto.cshtml", pedido);
             }
             return View(pedido);
+        }
+
+        public string EnviarMensagem(int pedidoId)
+        {
+            var pedido = _context.Pedidos.Include(p => p.PedidoMoveis).ThenInclude(p => p.Movel).FirstOrDefault(p => p.PedidoId == pedidoId);
+
+            string numeroDestinatario = "+55Digite o DDD e numero tudo junto";
+            string mensagem = "Pedido: " + pedido.PedidoId.ToString() + "Cliente: " + pedido.Nome.ToString();
+
+            // Formate o número removendo caracteres não numéricos
+            string numeroFormatado = new
+
+            string(numeroDestinatario.Where(char.IsDigit).ToArray());
+
+            // Construa o link do WhatsApp
+            string urlWhatsApp =
+
+            $"https://web.whatsapp.com/send?phone=+{numeroFormatado}&text={Uri.EscapeDataString(mensagem)}";
+
+            Console.WriteLine(urlWhatsApp);
+            // Retorne a View que contém o script JavaScript
+            return urlWhatsApp;
         }
     }
 }

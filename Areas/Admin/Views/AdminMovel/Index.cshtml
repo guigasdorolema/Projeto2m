@@ -55,10 +55,10 @@
                 @Html.DisplayFor(modelItem => item.Cor)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.ImagemUrl)
+               <img src="@item.ImagemUrl" alt="Imagem do Produto Atual" asp-append-version="true" width="100px">
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.ImagemPequenaUrl)
+                <img src="@item.ImagemPequenaUrl" alt="Imagem do Produto Atual" asp-append-version="true" width="200px">
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Valor)
